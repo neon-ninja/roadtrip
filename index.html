@@ -12,7 +12,7 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js" referrerpolicy="no-referrer"></script>
+    <script src="https://igor-vladyka.github.io/leaflet.motion/dist/leaflet.motion.min.js"></script>
 
     <style>
         html,
@@ -38,32 +38,30 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
+        var colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33']
+
         fetch("trip.geojson").then(response => response.json()).then(data => {
             console.log(data)
-
-            for (var f of data.features) {
+            var route = []
+            for (var i in data.features) {
+                var f = data.features[i];
                 var p = f.properties;
-                L.marker([p.lat, p.lng]).addTo(map)
-                    .bindTooltip(`<b>${p.date}: ${p.name}<b>`, {permanent:true});
-            }
-            
-            var maxDuration = Math.max(...data.features.map(d => d.properties.duration))
-            console.log("maxDuration:", maxDuration)
-            var cmap = chroma.scale('Spectral').domain([0, maxDuration])
-            L.geoJSON(data, {
-                style: function (feature) {
-                    return {
-                        //color: cmap(feature.properties.duration)
-                    };
-                },
-                onEachFeature: function (feature, layer) {
-                    var p = feature.properties;
-                    layer.bindTooltip(`<b>${p.date}: ${p.leg_name}<b><br>
+                L.marker([p.lat, p.lng]).addTo(map).bindTooltip(`<b>${p.date}: ${p.name}<b>`, { permanent: true });
+                const coordinates = f.geometry.coordinates.map(coord => [coord[1], coord[0]]); // Swap to [lat, lng]
+                var polyline = L.motion.polyline(coordinates, { color: colors[i] }, { speed: 5e5 })
+                /*polyline.bindTooltip(`<b>${p.date}: ${p.leg_name}<b><br>
                         ${(p.duration / 60 / 60).toLocaleString()}h<br>
                         ${(p.distance / 1000).toLocaleString()}km<br>
                         `, {permanent:true});
-                }
-            }).addTo(map);
+                */
+                route.push(polyline)
+            }
+            console.log(route)
+            var seq = L.motion.seq(route).addTo(map)
+
+            setTimeout(function () {
+                seq.motionStart();
+            }, 1000);
             map.fitBounds(L.geoJSON(data).getBounds());
         });
 
