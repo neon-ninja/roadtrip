@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Bali/Perth 2025</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://igor-vladyka.github.io/leaflet.motion/dist/leaflet.motion.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+        html,
+        body,
+        #map {
+            height: 100%;
+            width: 100;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+    <script>
+
+        const map = L.map('map')
+
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        Papa.parse("perth.csv", {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function(result) {
+                var data = result.data;
+                console.log(data)
+                var cmap = chroma.scale("Dark2").colors(data.length)
+                var route = []
+                var bounds = L.latLngBounds()
+                for (var i = 0; i < data.length - 1; i++) {
+                    var origin = data[i];
+                    var dest = data[i + 1];
+                    
+                    L.marker([origin.lat, origin.lng]).addTo(map).bindTooltip(`<b>${origin.name}<b>`, { permanent: false });
+                    var polyline = L.motion.polyline([[origin.lat, origin.lng], [dest.lat, dest.lng]], { color: cmap[i] }, { speed: 1e7 })
+                    route.push(polyline)
+                    bounds.extend([origin.lat, origin.lng])
+                }
+                console.log(route)
+                var seq = L.motion.seq(route).addTo(map)
+
+                setTimeout(function () {
+                    seq.motionStart();
+                }, 1000);
+                map.fitBounds(bounds);
+            }
+        });
+
+    </script>
+
+
+
+</body>
+
+</html>
